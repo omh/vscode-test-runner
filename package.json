@@ -2,7 +2,7 @@
     "name": "test-runner",
     "displayName": "test-runner",
     "description": "General purpose Test Runner for VS Code",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "omh",
     "repository": "https://github.com/omh/vscode-test-runner.git",
     "engines": {
