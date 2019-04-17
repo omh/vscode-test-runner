@@ -10,7 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
     let runner = new TestRunner();
     let previousTask: vscode.Task | undefined;
 
-    // ---------------
     async function getTasks(): Promise<vscode.Task[]> {
         let tasks: vscode.Task[] = [];
         if (!vscode.window.activeTextEditor) { return tasks; }
@@ -19,10 +18,8 @@ export function activate(context: vscode.ExtensionContext) {
         // nearest
         let scopeProvider = new scope.ScopeSymbolProvider();
         const symbols = await scopeProvider.getScopeSymbols();
-        if (symbols.length) {
-            let nearestTask = runner.testMethodTask(symbols, file);
-            if (nearestTask) { tasks.push(nearestTask); }
-        }
+        let nearestTask = runner.testMethodTask(symbols, file);
+        if (nearestTask) { tasks.push(nearestTask); }
 
         // file
         let fileTask = runner.testFileTask(file);
@@ -63,10 +60,34 @@ interface TestRunnerInterface {
     testAllCommand(command: string): string;
 }
 
+class ElixirRunner implements TestRunnerInterface {
+    public testMethodCommand(command: string, symbols: vscode.SymbolInformation[], file: string): string {
+        const activeEditor = vscode.window.activeTextEditor;
+        if (activeEditor) {
+            const lineNo = activeEditor.selection.start.line;
+            return command += " " + file + ":" + lineNo;
+        }
+
+        return this.testFileCommand(command, file);
+    }
+
+    public testFileCommand(command: string, file: string): string {
+        return command += " " + file;
+    }
+
+    public testAllCommand(command: string): string {
+        return command;
+    }
+}
+
 class PytestRunner implements TestRunnerInterface {
     public testMethodCommand(command: string, symbols: vscode.SymbolInformation[], file: string): string {
-        const symbol: string = symbols.map(s => s.name).join("::");
-        return command += " " + file + "::" + symbol;
+        if (symbols.length) {
+            const symbol: string = symbols.map(s => s.name).join("::");
+            return command += " " + file + "::" + symbol;
+        } else {
+            return this.testFileCommand(command, file);
+        }
     }
 
     public testFileCommand(command: string, file: string): string {
@@ -80,8 +101,12 @@ class PytestRunner implements TestRunnerInterface {
 
 class PhpunitRunner implements TestRunnerInterface {
     public testMethodCommand(command: string, symbols: vscode.SymbolInformation[], file: string): string {
-        const symbol: string = symbols.map(s => s.name).join("::");
-        return command += " --filter '" + symbol + "' " + file;
+        if (symbols.length) {
+            const symbol: string = symbols.map(s => s.name).join("::");
+            return command += " --filter '" + symbol + "' " + file;
+        } else {
+            return this.testFileCommand(command, file);
+        }
     }
 
     public testFileCommand(command: string, file: string): string {
@@ -100,6 +125,10 @@ class TestRunner {
             "setting": "python",
             "pytest": PytestRunner,
             "phpunit": PhpunitRunner,
+        },
+        "elixir": {
+            "setting": "elixir",
+            "exunit": ElixirRunner,
         }
     };
 
@@ -122,7 +151,9 @@ class TestRunner {
             const runner: TestRunnerInterface = new runnerClass(); 
             let exec = runner.testMethodCommand(cmd, symbols, relativeFile);
             return new vscode.Task(
-                { type: 'test-nearest' },
+                {
+                    type: 'test-nearest',
+                },
                 'test current method',
                 'Test runner',
                 new vscode.ShellExecution(exec),
@@ -221,7 +252,7 @@ class TestRunner {
         if (!editor) { return; } 
         let languageId = editor.document.languageId;
         if (!this.languageMap[languageId]) {
-            vscode.window.showErrorMessage("No registered runner for language {$languageId}");
+            vscode.window.showErrorMessage("No registered runner for language ${languageId}");
             return;
         }
         return languageId;

@@ -18,7 +18,7 @@
     "contributes": {
         "taskDefinitions": [
 			{
-				"type": "test-nearest"
+                "type": "test-nearest"
 			},
 			{
 				"type": "test-file"
@@ -34,6 +34,15 @@
             {
                 "title": "Test Runner",
                 "properties": {
+                    "testrunner.elixir": {
+                        "title": "Test runner: Elixir",
+                        "description": "Which test runner to use for Elixir",
+                        "type": "string",
+                        "enum": [
+                            "exunit"
+                        ],
+                        "default": "exunit"
+                    },
                     "testrunner.php": {
                         "title": "Test runner: Python",
                         "description": "Which test runner to use for PHP",
@@ -51,6 +60,12 @@
                             "pytest"
                         ],
                         "default": "pytest"
+                    },
+                    "testrunner.exunit.command": {
+                        "title": "Test runner: ExUnit - path to test runner (optional)",
+                        "type": "string",
+                        "default": "mix test",
+                        "description": "Executable for ExUnit"
                     },
                     "testrunner.pytest.command": {
                         "title": "Test runner: Pytest - path to test runner (optional)",
